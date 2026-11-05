@@ -20,7 +20,13 @@ export function attribute(attrs, name) {
 
 /** The heading's text as the page shows it: no tags, entities decoded, without mdBook's "#" link markup. */
 export function plainText(html) {
-  return decode(html.replace(/<[^>]*>/g, "")).replace(/​/g, "").replace(/\s+/g, " ").trim();
+  let visible = html;
+  // Strip until stable, so removing one tag can never leave a new one behind (`<<b>script>`).
+  for (let previous = ""; previous !== visible; ) {
+    previous = visible;
+    visible = visible.replace(/<[^>]*>/g, "");
+  }
+  return decode(visible).replace(/​/g, "").replace(/\s+/g, " ").trim();
 }
 
 /**
