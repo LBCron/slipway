@@ -97,7 +97,12 @@ function attributes(text) {
 
 /** The heading's text as the page shows it: no tags, entities decoded. */
 function plainText(html) {
-  const visible = html.replace(/<[^>]+>/g, "");
+  let visible = html;
+  // Strip until stable, so removing one tag can never leave a new one behind (`<<b>script>`).
+  for (let previous = ""; previous !== visible; ) {
+    previous = visible;
+    visible = visible.replace(/<[^>]+>/g, "");
+  }
   return decode(visible).replace(/\s+/g, " ").trim();
 }
 

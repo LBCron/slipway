@@ -14,11 +14,20 @@ const configs = ["js", "mjs", "cjs", "ts", "mts", "cts"].map((ext) => `astro.con
 const siteDirs = new Map();
 const offsets = new Map();
 
+/** The text with every tag removed. */
+const stripTags = (text) => {
+  // Strip until stable, so removing one tag can never leave a new one behind (`<<b>script>`).
+  let result = text;
+  for (let previous = ""; previous !== result; ) {
+    previous = result;
+    result = result.replace(/<[^>]*>/g, "");
+  }
+  return result;
+};
+
 /** Heading text without the Markdown that would keep a source heading from matching the parsed one. */
 const plain = (text) =>
-  text
-    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/<[^>]*>/g, "")
+  stripTags(text.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1"))
     .replace(/&(?:amp|lt|gt|quot|apos|nbsp|#\d+|#x[0-9a-f]+);/gi, " ")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "");

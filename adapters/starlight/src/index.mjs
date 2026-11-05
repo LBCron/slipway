@@ -27,7 +27,7 @@ export function twinOf(raw, title) {
  * derives the slug from the file path, so there is no front matter `slug` to read.
  */
 export function urlOf(source) {
-  const path = source.slice(`${contentDir}/`.length).replace(markdown, "").replace(/(^|\/)index$/, "").replace(/^\/+|\/+$/g, "");
+  const path = source.slice(`${contentDir}/`.length).replace(markdown, "").replace(/(^|\/)index$/, "").split("/").filter(Boolean).join("/");
   return path ? `/${path}/` : "/";
 }
 
