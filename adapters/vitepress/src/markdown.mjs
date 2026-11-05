@@ -66,9 +66,12 @@ function attributes(text) {
 
 /** The heading's text as the page shows it: no tags, entities decoded, without the theme's permalink anchor. */
 function plainText(html) {
-  const visible = html
-    .replace(/<a\b[^>]*class="[^"]*\bheader-anchor\b[^"]*"[^>]*>[\s\S]*?<\/a>/g, "")
-    .replace(/<[^>]+>/g, "");
+  let visible = html.replace(/<a\b[^>]*class="[^"]*\bheader-anchor\b[^"]*"[^>]*>[\s\S]*?<\/a>/g, "");
+  // Strip until stable, so removing one tag can never leave a new one behind (`<<b>script>`).
+  for (let previous = ""; previous !== visible; ) {
+    previous = visible;
+    visible = visible.replace(/<[^>]+>/g, "");
+  }
   return decode(visible).replace(/\u200b/g, "").replace(/\s+/g, " ").trim();
 }
 
