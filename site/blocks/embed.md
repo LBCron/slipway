@@ -6,6 +6,8 @@ youtube:
   id: aqz-KE-bpKQ
   title: Big Buck Bunny
   poster: /assets/images/social.png
+  poster_width: 1200
+  poster_height: 630
 vimeo:
   id: "76979871"
   title: The New Vimeo Player
@@ -22,18 +24,18 @@ aparat_rtl:
 
 The card is a plain link to the provider's watch page. Until the reader activates it, the page requests nothing from YouTube, Vimeo, or Aparat: there is no iframe, no player script, and no cookie. The provider first sees a request after the click, when its site opens in a new tab. Because nothing is embedded, the strict Content Security Policy from the repository's security guide needs no `frame-src` exception for this block.
 
-The IDs below are samples; replace them with your own videos. The `poster` parameter is optional: leave it out for a text-only card, or point it at an image, and it appears above the title with lazy loading. An unknown `provider` falls back to YouTube, and an empty `id` renders nothing.
+The IDs below are samples; replace them with your own videos. The `poster` parameter is optional: leave it out for a text-only card, or point it at an image, and it appears above the title with lazy loading. Pass `poster_width` and `poster_height` with it so the browser reserves the space before the image loads. An unknown `provider` falls back to YouTube, and an empty `id` renders nothing.
 
 ## Left-to-right
 
 ### YouTube
 
 {::nomarkdown}
-{% include blocks/embed.html provider="youtube" id=page.youtube.id title=page.youtube.title poster=page.youtube.poster %}
+{% include blocks/embed.html provider="youtube" id=page.youtube.id title=page.youtube.title poster=page.youtube.poster poster_width=page.youtube.poster_width poster_height=page.youtube.poster_height %}
 {:/nomarkdown}
 
 ```liquid
-{% raw %}{% include blocks/embed.html provider="youtube" id="aqz-KE-bpKQ" title="Big Buck Bunny" poster="/assets/images/social.png" %}{% endraw %}
+{% raw %}{% include blocks/embed.html provider="youtube" id="aqz-KE-bpKQ" title="Big Buck Bunny" poster="/assets/images/social.png" poster_width=1200 poster_height=630 %}{% endraw %}
 ```
 
 ### Vimeo

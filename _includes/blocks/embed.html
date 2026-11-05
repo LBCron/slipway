@@ -17,7 +17,7 @@
   {%- include component-css.html name="embed" -%}
   <a class="sl-embed sl-embed-{{ embed_provider }}" href="{{ embed_url | escape }}" target="_blank" rel="noopener noreferrer">
     {%- if include.poster %}
-    <img class="sl-embed-poster" src="{{ include.poster | relative_url | escape }}" alt="" loading="lazy">
+    <img class="sl-embed-poster" src="{{ include.poster | relative_url | escape }}" alt="" loading="lazy"{% if include.poster_width and include.poster_height %} width="{{ include.poster_width }}" height="{{ include.poster_height }}"{% endif %}>
     {%- endif %}
     <span class="sl-embed-body">
       <span class="sl-embed-provider">{{ embed_name }}</span>
