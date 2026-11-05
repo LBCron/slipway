@@ -70,10 +70,14 @@ function attributes(text) {
 
 /** The heading's text as the page shows it: no tags, entities decoded, without Quarto's anchor link. */
 function plainText(html) {
-  const visible = html
+  let visible = html
     .replace(/<a\b[^>]*class="[^"]*\banchor\b[^"]*"[^>]*>[\s\S]*?<\/a>/g, "")
-    .replace(/<a\b[^>]*class="[^"]*\bheader-anchor\b[^"]*"[^>]*>[\s\S]*?<\/a>/g, "")
-    .replace(/<[^>]+>/g, "");
+    .replace(/<a\b[^>]*class="[^"]*\bheader-anchor\b[^"]*"[^>]*>[\s\S]*?<\/a>/g, "");
+  // Strip until stable, so removing one tag can never leave a new one behind (`<<b>script>`).
+  for (let previous = ""; previous !== visible; ) {
+    previous = visible;
+    visible = visible.replace(/<[^>]+>/g, "");
+  }
   return decode(visible).replace(/​/g, "").replace(/\s+/g, " ").trim();
 }
 
