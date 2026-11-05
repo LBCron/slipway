@@ -45,12 +45,22 @@ function urlOf(path) {
 const fence = /^ {0,3}(`{3,}|~{3,})/;
 /** A heading's text without its closing hashes and inline markup, enough to read it in the source. */
 const plainSource = (text) =>
-  text
-    .replace(/[ \t]+#+[ \t]*$/, "")
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+  stripClosingHashes(text)
+    .replace(/!\[([^\]\n]{0,500})\]\([^)\n]{0,500}\)/g, "$1")
+    .replace(/\[([^\]\n]{0,500})\]\([^)\n]{0,500}\)/g, "$1")
     .replace(/[*_~`]/g, "")
     .trim();
+
+/** The text without a closing run of `#` (and the blanks around it), when blanks come before the run. */
+function stripClosingHashes(text) {
+  let end = text.length;
+  while (end > 0 && (text[end - 1] === " " || text[end - 1] === "\t")) end--;
+  let start = end;
+  while (start > 0 && text[start - 1] === "#") start--;
+  if (start === end || start === 0 || (text[start - 1] !== " " && text[start - 1] !== "\t")) return text;
+  while (start > 0 && (text[start - 1] === " " || text[start - 1] === "\t")) start--;
+  return text.slice(0, start);
+}
 
 /**
  * The Markdown headings in a file, in document order, as `{ level, line, text }` with 1-based lines
@@ -72,9 +82,9 @@ function sourceHeadings(raw) {
       continue;
     }
     const text = lines[i].replace(/^(?: {0,3}> ?)+/, "");
-    const atx = text.match(/^ {0,3}(#{1,6})(?:[ \t]+(.*?))?[ \t]*$/);
+    const atx = text.match(/^ {0,3}(#{1,6})(?=[ \t]|$)(.*)$/);
     if (atx) {
-      headings.push({ level: atx[1].length, line: i + 1, text: plainSource(atx[2] ?? "") });
+      headings.push({ level: atx[1].length, line: i + 1, text: plainSource(atx[2].trim()) });
       continue;
     }
     const underline = i + 1 < lines.length ? lines[i + 1].match(/^ {0,3}(=+|-+)[ \t]*$/) : null;
@@ -92,7 +102,7 @@ function sourceHeadings(raw) {
  */
 function addSources(html, headings, source) {
   let index = 0;
-  return html.replace(/<h([1-6])(\s[^>]*)?>/gi, (tag, level, attrs = "") => {
+  return html.replace(/<h([1-6])(\s[^<>]*)?>/gi, (tag, level, attrs = "") => {
     const heading = headings[index];
     if (!heading || heading.level !== Number(level)) return tag;
     index++;
@@ -119,7 +129,12 @@ function attributes(text) {
 
 /** The heading's text as the page shows it: no tags, entities decoded, without an empty hash-link anchor. */
 function plainText(html) {
-  const visible = html.replace(/<a\b[^>]*class="[^"]*\bheaderlink\b[^"]*"[^>]*>[\s\S]*?<\/a>/g, "").replace(/<[^>]+>/g, "");
+  let visible = html.replace(/<a\b[^>]*class="[^"]*\bheaderlink\b[^"]*"[^>]*>[\s\S]*?<\/a>/g, "");
+  // Strip until stable, so removing one tag can never leave a new one behind (`<<b>script>`).
+  for (let previous = ""; previous !== visible; ) {
+    previous = visible;
+    visible = visible.replace(/<[^>]+>/g, "");
+  }
   return decode(visible).replace(/\u200b/g, "").replace(/\s+/g, " ").trim();
 }
 
@@ -132,7 +147,31 @@ function headingsIn(html) {
 }
 
 const inlineLink = /(!?)\[(?:[^[\]\n]|\[[^[\]\n]*\])*\]\(\s*<?([^\s<>()]+(?:\([^\s()]*\)[^\s<>()]*)*)>?(?:\s+(?:"[^"\n]*"|'[^'\n]*'))?\s*\)/g;
-const codeSpan = /(`+)[\s\S]*?\1/g;
+/** The line with each code span (and its backticks) replaced by spaces of the same length. */
+function maskCodeSpans(line) {
+  let out = "";
+  let i = 0;
+  while (i < line.length) {
+    if (line[i] !== "`") {
+      out += line[i++];
+      continue;
+    }
+    let run = 0;
+    while (line[i + run] === "`") run++;
+    let masked = false;
+    for (let size = run; size >= 1 && !masked; size--) {
+      const ticks = "`".repeat(size);
+      const close = line.indexOf(ticks, i + size);
+      if (close === -1) continue;
+      const end = close + size;
+      out += " ".repeat(end - i);
+      i = end;
+      masked = true;
+    }
+    if (!masked) out += line[i++];
+  }
+  return out;
+}
 
 /** Inline links, `[text](href)`, outside front matter, fenced code, and code spans, with their 1-based lines. Images are left out. */
 function linksIn(raw) {
@@ -149,7 +188,7 @@ function linksIn(raw) {
       open = marker[1];
       continue;
     }
-    for (const match of lines[i].replace(codeSpan, (span) => " ".repeat(span.length)).matchAll(inlineLink)) {
+    for (const match of maskCodeSpans(lines[i]).matchAll(inlineLink)) {
       if (!match[1]) links.push({ href: match[2], line: i + 1 });
     }
   }
@@ -176,9 +215,15 @@ function readRoute(hexo, path) {
   });
 }
 
+const trimTrailingSlashes = (text) => {
+  let end = text.length;
+  while (end > 0 && text[end - 1] === "/") end--;
+  return text.slice(0, end);
+};
+
 /** Registers the filters on a Hexo instance. */
 function register(hexo) {
-  const root = (hexo.config.root || "/").replace(/\/+$/, "");
+  const root = trimTrailingSlashes(hexo.config.root || "/");
   const urlFor = (path) => `${root}${twinUrl(urlOf(path))}`;
 
   hexo.extend.filter.register("after_post_render", (data) => {
