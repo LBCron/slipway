@@ -19,6 +19,7 @@ Each adapter name links to its folder on GitHub.
 | [mdBook](https://github.com/arminazimi/slipway/tree/main/adapters/mdbook) | Node.js script run after `mdbook build` | `sourcemap.json`, Markdown twins, `data-source` on headings | mdBook 0.5 or later; Node.js 18 or later |
 | [MkDocs](https://github.com/arminazimi/slipway/tree/main/adapters/mkdocs) | MkDocs plugin | `sourcemap.json`, Markdown twins, `data-source` on headings | MkDocs 1.5 or later; Beautiful Soup 4.12 or later |
 | [Quarto](https://github.com/arminazimi/slipway/tree/main/adapters/quarto) | Quarto project extension (Lua filter and post-render script) | `sourcemap.json`, Markdown twins, `data-source` on headings | Quarto 1.4 or later; Node.js 22 or later |
+| [Starlight](https://github.com/arminazimi/slipway/tree/main/adapters/starlight) | Astro integration and a Markdown plugin | `sourcemap.json`, Markdown twins, `data-source` on headings | Astro 7 and Starlight 0.42; Node.js 22.23.4 or later |
 | [Zola](https://github.com/arminazimi/slipway/tree/main/adapters/zola) | Node.js script run after `zola build` | `sourcemap.json`, Markdown twins, `data-source` on headings | Zola; no minimum version is pinned |
 
 ## Add an adapter by pull request
