@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
-import { buildIssues, loadBriefs } from "./build.mjs";
+import { buildIssues, loadBriefs, preview } from "./build.mjs";
 import { parseRoadmap } from "./parse.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -126,29 +126,53 @@ test("detects dependency cycles", () => {
   assert.ok(errors.some((e) => e.startsWith("dependency cycle")));
 });
 
+test("the Priority column sets priority, wave, and execution order", () => {
+  const withPriority = SAMPLE.replace("| Key | Task | Lane | Size | Depends |\n|---|---|---|---|---|", "| Key | Task | Lane | Size | Priority | Depends |\n|---|---|---|---|---|---|")
+    .replace("| strong-agent | S | none |", "| strong-agent | S | P0 | none |")
+    .replace("| free-agent | XS | `foundation.layout` |", "| free-agent | XS | P1 | `foundation.layout` |");
+  const { issues, errors } = buildIssues(withPriority, new Map(), PARTIAL);
+  assert.deepEqual(errors, []);
+  const layout = issues.find((i) => i.key === "foundation.layout");
+  const check = issues.find((i) => i.key === "foundation.check");
+  assert.deepEqual([layout.priority, layout.wave, layout.order], ["P0", 1, 1]);
+  assert.deepEqual([check.priority, check.wave, check.order], ["P1", 2, 2]);
+  assert.ok(check.labels.includes("priority: P1"));
+  assert.match(check.body, /\*\*Priority:\*\* P1 · \*\*Wave:\*\* 2 · \*\*Order:\*\* 2 of 2/);
+  assert.match(layout.body, /## Blocks\n- \{\{ref:foundation\.check\}\}/);
+});
+
 test("the real ROADMAP.md and briefs build without errors", () => {
   const { issues, errors, stats } = buildIssues(real, loadBriefs());
   assert.deepEqual(errors, []);
-  assert.ok(stats.epics >= 14);
-  assert.ok(stats.tasks >= 90);
+  assert.equal(stats.epics, 12);
+  assert.ok(stats.tasks >= 200);
+  assert.equal(stats.withBrief, stats.tasks, "every task has a brief");
+  const orders = issues.filter((i) => i.kind === "task").map((i) => i.order).sort((a, b) => a - b);
+  assert.deepEqual(orders, orders.map((_, i) => i + 1), "execution order is 1..N with no gaps");
   for (const issue of issues) assert.ok(issue.title.length <= 256, `${issue.key}: title too long for GitHub`);
   for (const issue of issues) assert.ok(issue.body.length < 65_000, `${issue.key}: body too long for GitHub`);
+  for (const issue of issues.filter((i) => i.kind === "task")) {
+    const deps = issue.deps.map((d) => issues.find((i) => i.key === d));
+    for (const dep of deps) assert.ok(dep.order < issue.order && dep.wave < issue.wave, `${issue.key} must come after ${dep.key}`);
+  }
 });
 
-test("every issue transferred from Seaworthy has its key in the roadmap", async () => {
-  const { TRANSFER_FROM } = await import("./status.mjs");
-  const { issues } = buildIssues(real, loadBriefs());
-  const keys = new Set(issues.map((i) => i.key));
-  assert.equal(Object.keys(TRANSFER_FROM.issues).length, 29);
-  for (const key of Object.keys(TRANSFER_FROM.issues)) assert.ok(keys.has(key), `${key} is missing from ROADMAP.md`);
+test("the preview counts issues per wave and lane and shows sample bodies", () => {
+  const result = buildIssues(real, loadBriefs());
+  const text = preview(result);
+  assert.match(text, /- Issues: \*\*216\*\* \(12 epics, 204 tasks\)/);
+  assert.match(text, /Tasks per wave: wave 1: \d+/);
+  assert.match(text, /\| v0\.3\.0 \| 2026-11-09 → 2027-01-31 \| 12 \| 204 \|/);
+  assert.match(text, /### Epic: Foundations and frozen contracts/);
 });
 
-test("tasks that wait on Seaworthy are labeled", () => {
-  const { issues } = buildIssues(real, loadBriefs());
-  const label = (key) => issues.find((i) => i.key === key).labels;
-  assert.ok(label("theme.action").includes("needs: seaworthy"));
-  assert.ok(!label("sourcemap.contract").includes("needs: seaworthy"));
-  assert.ok(!label("agent.edit-button").includes("needs: seaworthy"));
-  assert.ok(label("agent.verified-gate").includes("needs: seaworthy"));
-  assert.ok(!label("theme.tokens").includes("needs: seaworthy"));
+test("tasks without a brief get the default done list for their kind", () => {
+  const kinds = SAMPLE.replace("| `foundation.layout` | Create the layout | strong-agent | S | none |", "| `check.layout` | Create the layout | strong-agent | S | none |").replace(
+    "| `foundation.check` | Add the check | free-agent | XS | `foundation.layout` |",
+    "| `spike.check` | Add the check | free-agent | XS | `check.layout` |",
+  );
+  const { issues, errors } = buildIssues(kinds, new Map(), PARTIAL);
+  assert.deepEqual(errors, []);
+  assert.match(issues.find((i) => i.key === "check.layout").body, /fires on its broken fixture/);
+  assert.match(issues.find((i) => i.key === "spike.check").body, /An ADR in `docs\/adr\/` records the question/);
 });
