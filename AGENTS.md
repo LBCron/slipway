@@ -54,6 +54,17 @@ The core theme works (Phases 0 and 1). The spec, `slipway doctor`, starters, Ski
 - `docs/modes.md`: classic Pages versus Actions mode, and what each feature needs. Update its table when a feature lands or an ADR changes a column.
 - `docs/adr/`: architecture decisions. Add one for every decision that is hard to reverse.
 
+## Parallel work: engine, theme, and units
+
+Up to 20 tasks run at once and merge in any order ([ADR 0023](docs/adr/0023-engine-theme-boundary.md)):
+
+- **The engine owns** config, the content model, Markdown, navigation, the render host, outputs, diagnostics, and the CLI. **The theme owns** layouts, chrome, components, tokens, styles, and client islands.
+- **One folder or file per unit:** `packages/engine/src/outputs/<name>.ts`, `packages/engine/src/markdown/plugins/<name>.ts`, `packages/theme/layouts/<name>.ts`, `packages/theme/chrome/<name>/`, `packages/theme/components/<name>/`, `packages/theme/tokens/<group>.json`.
+- **Registries discover units by folder.** Adding a unit never edits a shared index file, the pipeline, or another unit.
+- **The engine knows nothing about the theme:** nothing in `packages/engine/` imports from `packages/theme/`, and the engine has no Slipway name, color, or layout. `quality.boundary` enforces it.
+- **Contracts are frozen:** `packages/engine/src/contracts/` changes only through an ADR.
+- Touch only the files your issue lists; if another must change, stop and say why in the issue.
+
 ## Rules
 
 - One issue = one pull request, with `Closes #<issue>`.
