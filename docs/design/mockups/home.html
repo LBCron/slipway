@@ -1,0 +1,545 @@
+<!doctype html>
+<!--
+  Mockup for #1083: the docs home page.
+  Follows docs/design/brief.md.
+
+  Deviations from the brief (mockup only):
+  - Geist, Geist Mono and Vazirmatn are not bundled here (no assets in this task).
+    The font stacks name them first and fall back to system fonts, so the page
+    uses them if they are installed. The real theme self-hosts WOFF2 files.
+  - A few lines of inline JavaScript drive the three toggles (theme, direction,
+    palette) so one file can show every state. The real page needs none of them
+    for rendering; only the palette and theme switch need script.
+-->
+<html lang="en" dir="ltr" data-theme="night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home mockup · Slipway docs theme</title>
+<style>
+  /* ---------- tokens (brief: Color) ---------- */
+  :root, [data-theme="night"] {
+    --bg: #1f1f28; --surface: #2a2a37; --overlay: #363646; --highlight: #54546d;
+    --muted: #727169; --subtle: #c8c093; --text: #dcd7ba;
+    --accent: #7e9cd8; --accent-text: #7fb4ca; --on-accent: #1f1f28;
+    --keyword: #957fb8; --function: #7e9cd8; --string: #98bb6c;
+    --number: #ffa066; --type: #7aa89f; --variable: #e6c384;
+    color-scheme: dark;
+  }
+  [data-theme="day"] {
+    --bg: #eceff4; --surface: #e5e9f0; --overlay: #d8dee9; --highlight: #c5cddc;
+    --muted: #8892a6; --subtle: #4c566a; --text: #2e3440;
+    --accent: #5e81ac; --accent-text: #4c6f9a; --on-accent: #ffffff;
+    --keyword: #5e81ac; --function: #3f7f8c; --string: #6c8a52;
+    --number: #94638a; --type: #4f8a88; --variable: #b07d2b;
+    color-scheme: light;
+  }
+  :root {
+    --border: color-mix(in srgb, var(--highlight) 55%, var(--bg));
+    --font-body: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-code: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --font-fa: "Vazirmatn", "Geist", ui-sans-serif, system-ui, sans-serif;
+    --r-ctl: 6px; --r-card: 10px;
+    --header-h: 3.5rem; --page-max: 90rem;
+  }
+
+  /* ---------- base ---------- */
+  *, *::before, *::after { box-sizing: border-box; }
+  html { font-size: 16px; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 400 1rem/1.65 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  [dir="rtl"] body { font-family: var(--font-fa); line-height: 1.9; }
+  a { color: var(--accent-text); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-ctl); }
+  code, kbd, pre { font-family: var(--font-code); font-feature-settings: "liga" 0; }
+  h1, h2, h3 { margin: 0; letter-spacing: -0.02em; line-height: 1.2; }
+  p { margin: 0; }
+  .sr-only { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  svg { inline-size: 1em; block-size: 1em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+  kbd {
+    display: inline-block; min-inline-size: 1.4rem; padding: 0 .35rem; text-align: center;
+    font-size: .75rem; line-height: 1.4rem; color: var(--subtle);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+  }
+
+  /* ---------- mockup controls (not part of the page design) ---------- */
+  .mock-bar {
+    display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center;
+    padding: .5rem 1rem; background: var(--surface); border-block-end: 1px solid var(--border);
+    font-size: .8125rem; color: var(--subtle);
+  }
+  .mock-bar strong { color: var(--text); font-weight: 600; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--r-ctl); overflow: hidden; }
+  .seg button {
+    all: unset; cursor: pointer; padding: .2rem .7rem; font-size: .8125rem; color: var(--subtle);
+  }
+  .seg button + button { border-inline-start: 1px solid var(--border); }
+  .seg button[aria-pressed="true"] { background: var(--overlay); color: var(--accent-text); }
+  .seg button:focus-visible { outline-offset: -2px; }
+
+  /* ---------- header (brief: Components > Header) ---------- */
+  header.site {
+    position: sticky; inset-block-start: 0; z-index: 10;
+    block-size: var(--header-h); background: var(--bg); border-block-end: 1px solid var(--border);
+  }
+  .header-in {
+    max-inline-size: var(--page-max); margin-inline: auto; block-size: 100%;
+    padding-inline: 1.5rem; display: flex; align-items: center; gap: 1.5rem;
+  }
+  .logo { display: inline-flex; align-items: center; gap: .6rem; font-weight: 650; color: var(--text); letter-spacing: -0.01em; }
+  .logo:hover { text-decoration: none; }
+  .logo-mark { inline-size: 1.4rem; block-size: 1.4rem; border-radius: 5px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font: 700 .8rem var(--font-code); }
+  nav.tabs { display: flex; gap: .25rem; block-size: 100%; }
+  nav.tabs a {
+    display: flex; align-items: center; padding-inline: .75rem; color: var(--subtle); font-size: .9375rem;
+    border-block-end: 2px solid transparent; margin-block-end: -1px;
+  }
+  nav.tabs a:hover { color: var(--text); text-decoration: none; }
+  nav.tabs a[aria-current="page"] { color: var(--accent-text); border-block-end-color: var(--accent); }
+  .header-end { margin-inline-start: auto; display: flex; align-items: center; gap: .5rem; }
+  .search {
+    all: unset; cursor: pointer; box-sizing: border-box;
+    display: flex; align-items: center; gap: .6rem; inline-size: 17rem; block-size: 2.25rem; padding-inline: .75rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-ctl);
+    color: var(--subtle); font-size: .875rem;
+  }
+  .search:hover { border-color: var(--highlight); }
+  .search kbd { margin-inline-start: auto; }
+  .icon-btn, .select {
+    all: unset; cursor: pointer; box-sizing: border-box;
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+    block-size: 2.25rem; min-inline-size: 2.25rem; padding-inline: .5rem;
+    border-radius: var(--r-ctl); color: var(--subtle); font-size: .875rem;
+  }
+  .icon-btn:hover, .select:hover { background: var(--overlay); color: var(--text); }
+  .icon-btn svg { font-size: 1.1rem; }
+
+  /* ---------- page ---------- */
+  main { max-inline-size: var(--page-max); margin-inline: auto; padding-inline: 1.5rem; }
+
+  .hero { padding-block: 5rem 3.5rem; max-inline-size: 46rem; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: .5rem; margin-block-end: 1.25rem;
+    font: 500 .8125rem var(--font-code); color: var(--accent-text);
+    padding: .2rem .65rem; background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+  }
+  .eyebrow i { inline-size: .45rem; block-size: .45rem; border-radius: 50%; background: var(--string); }
+  .hero h1 { font-size: 2.75rem; font-weight: 650; letter-spacing: -0.03em; text-wrap: balance; }
+  .hero p.lead { margin-block-start: 1rem; font-size: 1.1875rem; color: var(--subtle); max-inline-size: 38rem; }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-block-start: 2rem; align-items: center; }
+  .btn {
+    display: inline-flex; align-items: center; gap: .5rem; block-size: 2.5rem; padding-inline: 1.1rem;
+    border-radius: var(--r-ctl); font-weight: 550; font-size: .9375rem; border: 1px solid transparent;
+  }
+  .btn:hover { text-decoration: none; }
+  .btn-primary { background: var(--accent); color: var(--on-accent); }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-quiet { background: var(--surface); border-color: var(--border); color: var(--text); }
+  .btn-quiet:hover { border-color: var(--highlight); }
+  .install {
+    display: inline-flex; align-items: center; gap: .75rem; block-size: 2.5rem; padding-inline: 1rem;
+    border: 1px solid var(--border); border-radius: var(--r-ctl); background: var(--surface);
+    font: .875rem var(--font-code); color: var(--text);
+  }
+  .install .prompt { color: var(--muted); user-select: none; }
+
+  section.block { padding-block: 2.5rem; border-block-start: 1px solid var(--border); }
+  section.block > h2 { font-size: 1.5rem; font-weight: 620; }
+  section.block > p.sub { margin-block-start: .4rem; color: var(--subtle); max-inline-size: 40rem; }
+
+  /* quick-link cards (brief: Supabase card grid) */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 1rem; margin-block-start: 1.5rem; }
+  .card {
+    display: flex; flex-direction: column; gap: .5rem; padding: 1.25rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card);
+    color: var(--text);
+  }
+  .card:hover { border-color: var(--highlight); text-decoration: none; }
+  .card:hover h3 { color: var(--accent-text); }
+  .card .ico { color: var(--accent-text); font-size: 1.25rem; }
+  .card h3 { font-size: 1.0625rem; font-weight: 600; }
+  .card p { font-size: .9375rem; color: var(--subtle); line-height: 1.55; }
+  .card .more { margin-block-start: auto; padding-block-start: .5rem; font-size: .875rem; color: var(--accent-text); display: inline-flex; gap: .3rem; align-items: center; }
+  [dir="rtl"] .arrow { transform: scaleX(-1); }
+
+  /* code sample with hover symbol */
+  .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 2.5rem; align-items: center; margin-block-start: 1.5rem; }
+  .split .points { display: grid; gap: 1.1rem; margin: 0; padding: 0; list-style: none; }
+  .split .points li { display: grid; gap: .15rem; }
+  .split .points b { font-weight: 600; }
+  .split .points span { color: var(--subtle); font-size: .9375rem; }
+  .code { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); }
+  .code-head {
+    display: flex; align-items: center; gap: .25rem; padding: .35rem .5rem; background: var(--overlay);
+    border-block-end: 1px solid var(--border); border-start-start-radius: var(--r-card); border-start-end-radius: var(--r-card);
+  }
+  .code-head .tab { padding: .2rem .65rem; border-radius: 4px; font: .8125rem var(--font-code); color: var(--subtle); }
+  .code-head .tab[aria-selected="true"] { background: var(--surface); color: var(--accent-text); }
+  .code-head .copy { margin-inline-start: auto; }
+  .code pre { margin: 0; padding: 1rem 0; font-size: .875em; line-height: 1.8; overflow-x: auto; direction: ltr; text-align: left; white-space: normal; }
+  .code .ln { display: block; padding-inline: 1rem 1.25rem; border-inline-start: 3px solid transparent; white-space: pre; }
+  .code .ln.mark { background: color-mix(in srgb, var(--accent) 12%, transparent); border-inline-start-color: var(--accent); }
+  .code .n { display: inline-block; inline-size: 1.5rem; margin-inline-end: 1rem; color: var(--muted); text-align: end; user-select: none; }
+  .k { color: var(--keyword); } .f { color: var(--function); } .s { color: var(--string); }
+  .num { color: var(--number); } .t { color: var(--type); } .v { color: var(--variable); } .c { color: var(--muted); font-style: italic; }
+  .code-foot { display: flex; gap: .75rem; align-items: center; padding: .5rem 1rem; border-block-start: 1px solid var(--border); font-size: .8125rem; color: var(--subtle); }
+  .chip { display: inline-flex; align-items: center; gap: .35rem; padding: .1rem .55rem; border: 1px solid var(--border); border-radius: 999px; font-size: .8125rem; color: var(--subtle); background: var(--bg); }
+  .chip svg { color: var(--string); }
+
+  .sym { position: relative; border-block-end: 1px dotted var(--subtle); cursor: help; }
+  .sym:focus-visible { outline-offset: 1px; }
+  .pop {
+    position: absolute; inset-block-end: calc(100% + .5rem); inset-inline-start: -.5rem; z-index: 5;
+    inline-size: 17.5rem; padding: .75rem .9rem; text-align: start; white-space: normal;
+    background: var(--overlay); border: 1px solid var(--highlight); border-radius: var(--r-ctl);
+    box-shadow: 0 8px 24px rgb(0 0 0 / .28); font: .8125rem/1.5 var(--font-body); color: var(--text); font-style: normal;
+    visibility: hidden; opacity: 0; transition: opacity .12s;
+  }
+  [dir="rtl"] .pop { font-family: var(--font-fa); }
+  .sym:hover .pop, .sym:focus .pop { visibility: visible; opacity: 1; }
+  .pop code { display: block; margin-block-end: .35rem; color: var(--type); font-size: .8125rem; }
+  .pop a { display: inline-block; margin-block-start: .35rem; }
+
+  /* section overview */
+  .sections { display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: 2rem 2.5rem; margin-block-start: 1.5rem; }
+  .sec h3 { font-size: 1.0625rem; font-weight: 600; display: flex; align-items: center; gap: .5rem; }
+  .sec h3 svg { color: var(--accent-text); }
+  .sec > p { margin-block-start: .35rem; font-size: .9375rem; color: var(--subtle); }
+  .sec ul { list-style: none; margin: .75rem 0 0; padding: 0; border-block-start: 1px solid var(--border); }
+  .sec li { border-block-end: 1px solid var(--border); }
+  .sec li a { display: flex; justify-content: space-between; gap: 1rem; padding-block: .5rem; color: var(--text); font-size: .9375rem; }
+  .sec li a:hover { color: var(--accent-text); text-decoration: none; }
+  .sec li a span:last-child { color: var(--muted); font-size: .8125rem; font-family: var(--font-code); }
+
+  /* trust strip (brief: Quiet proof) */
+  .trust { display: flex; flex-wrap: wrap; gap: .75rem 2rem; margin-block-start: 1.5rem; padding: 1rem 1.25rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); }
+  .trust div { display: grid; }
+  .trust b { font: 600 1.25rem var(--font-code); letter-spacing: -0.02em; }
+  .trust span { font-size: .8125rem; color: var(--subtle); }
+
+  footer.site { margin-block-start: 2rem; border-block-start: 1px solid var(--border); }
+  .footer-in { max-inline-size: var(--page-max); margin-inline: auto; padding: 1.5rem; display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; align-items: center; font-size: .875rem; color: var(--subtle); }
+  .footer-in .spacer { margin-inline-start: auto; }
+
+  /* command palette (brief: Components > Command palette) */
+  .scrim { position: fixed; inset: 0; z-index: 30; background: rgb(0 0 0 / .5); display: none; align-items: flex-start; justify-content: center; padding: 12vh 1rem 1rem; }
+  .scrim.open { display: flex; }
+  .palette {
+    inline-size: min(36rem, 100%); max-block-size: 70vh; display: flex; flex-direction: column;
+    background: var(--bg); border: 1px solid var(--highlight); border-radius: var(--r-card); box-shadow: 0 16px 48px rgb(0 0 0 / .4);
+    overflow: hidden;
+  }
+  .palette-in { display: flex; align-items: center; gap: .75rem; padding: .85rem 1rem; border-block-end: 1px solid var(--border); color: var(--subtle); }
+  .palette-in input { all: unset; flex: 1; color: var(--text); font-size: 1rem; }
+  .palette-in input::placeholder { color: var(--muted); }
+  .palette-list { overflow-y: auto; padding: .5rem; }
+  .group { padding: .6rem .6rem .25rem; font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--subtle); }
+  [dir="rtl"] .group { letter-spacing: 0; }
+  .res { display: flex; align-items: center; gap: .75rem; padding: .5rem .6rem; border-radius: var(--r-ctl); color: var(--text); font-size: .9375rem; }
+  .res[aria-selected="true"] { background: var(--overlay); color: var(--accent-text); }
+  .res code { font-size: .875rem; }
+  .res small { margin-inline-start: auto; color: var(--subtle); font-size: .8125rem; }
+  .palette-foot { display: flex; gap: 1rem; padding: .6rem 1rem; border-block-start: 1px solid var(--border); font-size: .8125rem; color: var(--subtle); }
+  .palette-foot span { display: inline-flex; gap: .35rem; align-items: center; }
+
+  /* responsive (brief: Layout) */
+  @media (max-width: 64rem) {
+    nav.tabs { display: none; }
+    .split { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 48rem) {
+    .search { inline-size: 2.25rem; padding-inline: 0; justify-content: center; }
+    .search span, .search kbd { display: none; }
+    .hero { padding-block: 3rem 2.5rem; }
+    .hero h1 { font-size: 2.25rem; }
+    .select span { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<!-- Mockup controls: not part of the design -->
+<div class="mock-bar" role="group" aria-label="Mockup controls">
+  <strong>Home mockup</strong>
+  <span class="seg" aria-label="Mode">
+    <button type="button" data-set="theme" data-val="night" aria-pressed="true">Night</button>
+    <button type="button" data-set="theme" data-val="day" aria-pressed="false">Day</button>
+  </span>
+  <span class="seg" aria-label="Direction">
+    <button type="button" data-set="dir" data-val="ltr" aria-pressed="true">LTR</button>
+    <button type="button" data-set="dir" data-val="rtl" aria-pressed="false">RTL</button>
+  </span>
+  <span class="seg" aria-label="Command palette">
+    <button type="button" id="open-palette" aria-pressed="false">Show command palette</button>
+  </span>
+  <span>Hover the underlined <code>build</code> for the symbol popover.</span>
+</div>
+
+<header class="site">
+  <div class="header-in">
+    <a class="logo" href="#"><span class="logo-mark" aria-hidden="true">S</span> <span data-i18n="brand">Slipway</span></a>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#" aria-current="page" data-i18n="tab1">Guides</a>
+      <a href="#" data-i18n="tab2">API reference</a>
+      <a href="#" data-i18n="tab3">Components</a>
+      <a href="#" data-i18n="tab4">Changelog</a>
+    </nav>
+    <div class="header-end">
+      <button class="search" type="button" id="search-btn" aria-label="Search the docs">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <span data-i18n="search">Search the docs</span>
+        <kbd>/</kbd>
+      </button>
+      <button class="select" type="button" aria-label="Language">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg>
+        <span data-i18n="lang">English</span>
+      </button>
+      <button class="icon-btn" type="button" id="theme-btn" aria-label="Switch theme (t)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/></svg>
+      </button>
+      <a class="icon-btn" href="#" aria-label="Repository on GitHub">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4 1.3-4-2-6-2.5M15 21v-3.2a2.8 2.8 0 0 0-.8-2.2c2.7-.3 5.5-1.3 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.3 4.3 0 0 0-.1-3.2s-1-.3-3.3 1.3a11.400 11.400 0 0 0-6 0C6.700 2.900 5.700 3.200 5.700 3.200a4.300 4.300 0 0 0-.1 3.200A4.600 4.600 0 0 0 4.300 9.600c0 4.600 2.800 5.700 5.500 6a2.800 2.800 0 0 0-.8 2.200V21"/></svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <span class="eyebrow"><i aria-hidden="true"></i><span data-i18n="eyebrow">v0.3.0 · 612 pages · 100% examples tested</span></span>
+    <h1 data-i18n="h1">Documentation you can find, read, and trust.</h1>
+    <p class="lead" data-i18n="lead">Evergreen's docs, built to be fast to search, calm to read, and checked on every build. Start with a guide, or jump straight to the API.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#"><span data-i18n="cta1">Get started</span>
+        <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <a class="btn btn-quiet" href="#" data-i18n="cta2">Browse the API</a>
+      <span class="install" dir="ltr" aria-label="Install command"><span class="prompt">$</span> <span dir="ltr">npm create evergreen@latest</span></span>
+    </div>
+  </div>
+
+  <section class="block" aria-labelledby="quick">
+    <h2 id="quick" data-i18n="quickH">Start here</h2>
+    <p class="sub" data-i18n="quickP">The four pages most people need first.</p>
+    <div class="cards">
+      <a class="card" href="#">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h10l4 4v12H5z"/><path d="M14 4v5h5M9 13h6M9 17h6"/></svg>
+        <h3 data-i18n="c1t">Quickstart</h3>
+        <p data-i18n="c1p">Install, create a project, and run your first build in five minutes.</p>
+        <span class="more"><span data-i18n="open">Read guide</span> <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </a>
+      <a class="card" href="#">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-5 4 5 4M16 8l5 4-5 4M14 5l-4 14"/></svg>
+        <h3 data-i18n="c2t">API reference</h3>
+        <p data-i18n="c2p">Every function, option, and type with a signature and a tested example.</p>
+        <span class="more"><span data-i18n="open2">Open reference</span> <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </a>
+      <a class="card" href="#">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 19h14"/></svg>
+        <h3 data-i18n="c3t">Migrate from v1</h3>
+        <p data-i18n="c3p">A step-by-step path with the breaking changes listed once, in order.</p>
+        <span class="more"><span data-i18n="open">Read guide</span> <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </a>
+      <a class="card" href="#">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.500 3.400 8 8 9 4.600-1 8-4.500 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>
+        <h3 data-i18n="c4t">Configuration</h3>
+        <p data-i18n="c4p">Every option in one place, with defaults and what changes when you set it.</p>
+        <span class="more"><span data-i18n="open2">Open reference</span> <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </a>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="code">
+    <h2 id="code" data-i18n="codeH">Signature first, example always</h2>
+    <p class="sub" data-i18n="codeP">Reference pages open with the signature. Names and types explain themselves on hover.</p>
+    <div class="split">
+      <ul class="points">
+        <li><b data-i18n="p1t">Tested examples</b><span data-i18n="p1p">Every example runs in CI. The chip under a block shows when it last passed.</span></li>
+        <li><b data-i18n="p2t">Keyboard complete</b><span data-i18n="p2p"><kbd>/</kbd> search, <kbd>j</kbd> <kbd>k</kbd> sections, <kbd>c</kbd> copy code, <kbd>m</kbd> copy page as Markdown.</span></li>
+        <li><b data-i18n="p3t">Same page for people and agents</b><span data-i18n="p3p">Every page is also available as clean Markdown with its source file and line.</span></li>
+      </ul>
+      <div class="code" role="group" aria-label="Code example">
+        <div class="code-head">
+          <span class="tab" role="tab" aria-selected="true">TypeScript</span>
+          <span class="tab" role="tab" aria-selected="false">JavaScript</span>
+          <span class="tab" role="tab" aria-selected="false">CLI</span>
+          <button class="icon-btn copy" type="button" aria-label="Copy code (c)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></svg>
+          </button>
+        </div>
+        <pre><code><span class="ln"><span class="n">1</span><span class="k">import</span> { <span class="sym f" tabindex="0">build<span class="pop" role="tooltip"><code>build(opts: BuildOptions): Promise&lt;Site&gt;</code>Reads your pages and writes the finished site. Fails the build on a broken link.<br><a href="#">Open build() →</a></span></span> } <span class="k">from</span> <span class="s">"evergreen"</span>;</span>
+<span class="ln"><span class="n">2</span></span>
+<span class="ln mark"><span class="n">3</span><span class="k">const</span> <span class="v">site</span> = <span class="k">await</span> <span class="f">build</span>({</span>
+<span class="ln mark"><span class="n">4</span>  <span class="v">root</span>: <span class="s">"./docs"</span>,</span>
+<span class="ln"><span class="n">5</span>  <span class="v">mode</span>: <span class="s">"strict"</span>, <span class="c">// check = build</span></span>
+<span class="ln"><span class="n">6</span>  <span class="v">budget</span>: { <span class="v">css</span>: <span class="num">40</span>, <span class="v">js</span>: <span class="num">30</span> },</span>
+<span class="ln"><span class="n">7</span>});</span></code></pre>
+        <div class="code-foot">
+          <span class="chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg> <span data-i18n="tested">Tested</span></span>
+          <span data-i18n="tested2">Passed on the latest build</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="sections">
+    <h2 id="sections" data-i18n="secH">All sections</h2>
+    <p class="sub" data-i18n="secP">Pick a section to open its tree in the sidebar.</p>
+    <div class="sections">
+      <div class="sec">
+        <h3><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7a3 3 0 0 1 3 3v11a2 2 0 0 0-2-2H4zM20 5h-6"/></svg><a href="#" data-i18n="s1t">Guides</a></h3>
+        <p data-i18n="s1p">Task-based pages, in the order you need them.</p>
+        <ul>
+          <li><a href="#"><span data-i18n="s1a">Installation</span><span>3 min</span></a></li>
+          <li><a href="#"><span data-i18n="s1b">Writing pages</span><span>8 min</span></a></li>
+          <li><a href="#"><span data-i18n="s1c">Deploying</span><span>5 min</span></a></li>
+        </ul>
+      </div>
+      <div class="sec">
+        <h3><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-5 4 5 4M16 8l5 4-5 4M14 5l-4 14"/></svg><a href="#" data-i18n="s2t">API reference</a></h3>
+        <p data-i18n="s2p">Functions, options, and types with signatures.</p>
+        <ul>
+          <li><a href="#"><code>build()</code><span>function</span></a></li>
+          <li><a href="#"><code>check()</code><span>function</span></a></li>
+          <li><a href="#"><code>SiteConfig</code><span>type</span></a></li>
+        </ul>
+      </div>
+      <div class="sec">
+        <h3><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.500"/><rect x="13" y="4" width="7" height="7" rx="1.500"/><rect x="4" y="13" width="7" height="7" rx="1.500"/><rect x="13" y="13" width="7" height="7" rx="1.500"/></svg><a href="#" data-i18n="s3t">Components</a></h3>
+        <p data-i18n="s3p">Callouts, tabs, cards, and code blocks you can use in a page.</p>
+        <ul>
+          <li><a href="#"><span data-i18n="s3a">Callout</span><span>3 variants</span></a></li>
+          <li><a href="#"><span data-i18n="s3b">Code tabs</span><span>remembered</span></a></li>
+          <li><a href="#"><span data-i18n="s3c">Parameter table</span><span>typed</span></a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="proof">
+    <h2 id="proof" data-i18n="proofH">Checked on every build</h2>
+    <p class="sub" data-i18n="proofP">Small numbers, always visible, never a banner.</p>
+    <div class="trust">
+      <div><b>612</b><span data-i18n="m1">pages</span></div>
+      <div><b>1,284</b><span data-i18n="m2">examples tested</span></div>
+      <div><b>0</b><span data-i18n="m3">drifted pages</span></div>
+      <div><b>31 KB</b><span data-i18n="m4">CSS and JS per page</span></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="footer-in">
+    <span data-i18n="foot1">Built with Slipway</span>
+    <a href="#" data-i18n="foot2">Edit this site on GitHub</a>
+    <a href="#" data-i18n="foot3">Copy as Markdown <kbd>m</kbd></a>
+    <span class="spacer" data-i18n="foot4">Evergreen docs · v0.3.0</span>
+  </div>
+</footer>
+
+<!-- Command palette -->
+<div class="scrim" id="scrim" aria-hidden="true">
+  <div class="palette" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div class="palette-in">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="text" value="build" placeholder="Search the docs" aria-label="Search">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="palette-list" role="listbox">
+      <div class="group" data-i18n="gApi">API</div>
+      <div class="res" role="option" aria-selected="true"><code dir="ltr">build()</code><small dir="ltr">evergreen · function</small></div>
+      <div class="res" role="option" aria-selected="false"><code dir="ltr">BuildOptions</code><small dir="ltr">evergreen · type</small></div>
+      <div class="group" data-i18n="gGuides">Guides</div>
+      <div class="res" role="option" aria-selected="false"><span data-i18n="r1">Build and deploy a site</span><small data-i18n="r1s">Guides</small></div>
+      <div class="res" role="option" aria-selected="false"><span data-i18n="r2">Fix a failing build</span><small data-i18n="r2s">Guides</small></div>
+      <div class="group" data-i18n="gAct">Actions</div>
+      <div class="res" role="option" aria-selected="false"><span data-i18n="r3">Copy page as Markdown</span><small><kbd>m</kbd></small></div>
+      <div class="res" role="option" aria-selected="false"><span data-i18n="r4">Switch theme</span><small><kbd>t</kbd></small></div>
+    </div>
+    <div class="palette-foot">
+      <span><kbd>↑</kbd><kbd>↓</kbd> <span data-i18n="f1">move</span></span>
+      <span><kbd>↵</kbd> <span data-i18n="f2">open</span></span>
+      <span><kbd>Esc</kbd> <span data-i18n="f3">close</span></span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var fa = {
+    brand: "اسلیپ‌وی", tab1: "راهنماها", tab2: "مرجع API", tab3: "اجزا", tab4: "تغییرات",
+    search: "جستجو در مستندات", lang: "فارسی",
+    eyebrow: "نسخه ۰٫۳٫۰ · ۶۱۲ صفحه · ۱۰۰٪ مثال‌ها آزموده شده",
+    h1: "مستنداتی که می‌شود یافت، خواند و به آن اعتماد کرد.",
+    lead: "مستندات Evergreen، ساخته‌شده برای جستجوی سریع، خواندن آرام و بررسی در هر ساخت. با یک راهنما شروع کنید یا مستقیم به API بروید.",
+    cta1: "شروع کنید", cta2: "مرور API",
+    quickH: "از اینجا شروع کنید", quickP: "چهار صفحه‌ای که بیشتر مردم اول به آن‌ها نیاز دارند.",
+    c1t: "شروع سریع", c1p: "نصب کنید، پروژه بسازید و اولین ساخت را در پنج دقیقه اجرا کنید.",
+    c2t: "مرجع API", c2p: "هر تابع، گزینه و نوع با امضا و یک مثال آزموده‌شده.",
+    c3t: "مهاجرت از نسخه ۱", c3p: "مسیری گام‌به‌گام که تغییرات ناسازگار را یک‌بار و به ترتیب فهرست می‌کند.",
+    c4t: "پیکربندی", c4p: "همه گزینه‌ها در یک جا، با مقدار پیش‌فرض و اثر هر تنظیم.",
+    open: "خواندن راهنما", open2: "باز کردن مرجع",
+    codeH: "اول امضا، همیشه مثال", codeP: "صفحه‌های مرجع با امضا شروع می‌شوند. نام‌ها و نوع‌ها با شناور شدن توضیح می‌دهند.",
+    p1t: "مثال‌های آزموده", p1p: "هر مثال در CI اجرا می‌شود. نشان زیر بلوک نشان می‌دهد آخرین بار کی موفق بوده است.",
+    p2t: "کامل با صفحه‌کلید", p2p: "<kbd>/</kbd> جستجو، <kbd>j</kbd> <kbd>k</kbd> بخش‌ها، <kbd>c</kbd> کپی کد، <kbd>m</kbd> کپی صفحه به‌صورت Markdown.",
+    p3t: "یک صفحه برای انسان و عامل", p3p: "هر صفحه به‌صورت Markdown تمیز، همراه فایل و خط منبع، در دسترس است.",
+    tested: "آزموده", tested2: "در آخرین ساخت موفق بود",
+    secH: "همه بخش‌ها", secP: "یک بخش را انتخاب کنید تا درخت آن در نوار کناری باز شود.",
+    s1t: "راهنماها", s1p: "صفحه‌های وظیفه‌محور، به ترتیب نیاز.", s1a: "نصب", s1b: "نوشتن صفحه‌ها", s1c: "استقرار",
+    s2t: "مرجع API", s2p: "تابع‌ها، گزینه‌ها و نوع‌ها با امضا.",
+    s3t: "اجزا", s3p: "فراخوان، زبانه، کارت و بلوک کد برای استفاده در صفحه.", s3a: "فراخوان", s3b: "زبانه‌های کد", s3c: "جدول پارامتر",
+    proofH: "بررسی در هر ساخت", proofP: "عددهای کوچک، همیشه دیدنی، هرگز یک بنر.",
+    m1: "صفحه", m2: "مثال آزموده", m3: "صفحه ناهمگام", m4: "CSS و JS در هر صفحه",
+    foot1: "ساخته‌شده با Slipway", foot2: "ویرایش این سایت در GitHub", foot3: "کپی به‌صورت Markdown <kbd>m</kbd>", foot4: "مستندات Evergreen · ۰٫۳٫۰",
+    gApi: "API", gGuides: "راهنماها", gAct: "کنش‌ها",
+    r1: "ساخت و استقرار یک سایت", r1s: "راهنماها", r2: "رفع یک ساخت ناموفق", r2s: "راهنماها",
+    r3: "کپی صفحه به‌صورت Markdown", r4: "تغییر پوسته",
+    f1: "حرکت", f2: "باز کردن", f3: "بستن"
+  };
+  var en = {};
+  document.querySelectorAll("[data-i18n]").forEach(function (el) { en[el.dataset.i18n] = el.innerHTML; });
+
+  function press(group, val) {
+    document.querySelectorAll('[data-set="' + group + '"]').forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.val === val));
+    });
+  }
+  function setTheme(v) { root.dataset.theme = v; press("theme", v); }
+  function setDir(v) {
+    root.dir = v; root.lang = v === "rtl" ? "fa" : "en"; press("dir", v);
+    var src = v === "rtl" ? fa : en;
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+      var k = el.dataset.i18n; if (src[k] != null) el.innerHTML = src[k];
+    });
+    document.getElementById("q").placeholder = v === "rtl" ? "جستجو در مستندات" : "Search the docs";
+  }
+  var scrim = document.getElementById("scrim"), q = document.getElementById("q"), openBtn = document.getElementById("open-palette");
+  function palette(open) {
+    scrim.classList.toggle("open", open); scrim.setAttribute("aria-hidden", String(!open));
+    openBtn.setAttribute("aria-pressed", String(open));
+    if (open) q.focus();
+  }
+
+  document.querySelectorAll("[data-set]").forEach(function (b) {
+    b.addEventListener("click", function () { (b.dataset.set === "theme" ? setTheme : setDir)(b.dataset.val); });
+  });
+  document.getElementById("theme-btn").addEventListener("click", function () { setTheme(root.dataset.theme === "night" ? "day" : "night"); });
+  document.getElementById("search-btn").addEventListener("click", function () { palette(true); });
+  openBtn.addEventListener("click", function () { palette(!scrim.classList.contains("open")); });
+  scrim.addEventListener("click", function (e) { if (e.target === scrim) palette(false); });
+  document.addEventListener("keydown", function (e) {
+    var typing = /^(INPUT|TEXTAREA)$/.test(e.target.tagName);
+    if (e.key === "Escape") palette(false);
+    else if ((e.key === "/" && !typing) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k")) { e.preventDefault(); palette(true); }
+    else if (e.key === "t" && !typing) setTheme(root.dataset.theme === "night" ? "day" : "night");
+  });
+})();
+</script>
+</body>
+</html>
